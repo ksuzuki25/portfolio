@@ -4,7 +4,7 @@
 #*******************************************************************************
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: AWS SAM template for Serverless Base Applications
+Description: AWS SAM template for Serverless Todo App
 
 Parameters:
   Env:
@@ -18,7 +18,7 @@ Parameters:
   SystemName:
     Description: Please enter a name to identify the specified System.
     Type: String
-    Default: kobuhei-develop
+    Default: kobuhei-develop-todo
   Worker:
     Description: Please enter the worker's Name as a format of FirstName LastName.
     Type: String
@@ -72,13 +72,10 @@ Resources:
     Properties:
       Name: !Sub ${SystemName}-${Env}-back-apigw
       StageName: test
-      AccessLogSetting:
-        DestinationArn: !GetAtt LogGroup.Arn
-        Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "caller":"$context.identity.caller", "user":"$context.identity.user","requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath", "status":"$context.status","protocol":"$context.protocol", "responseLength":"$context.responseLength" }'
       Auth:
         ApiKeyRequired: true
         UsagePlan: 
-          UsagePlanName: !Sub ${SystemName}-${Env}-usageplan
+          UsagePlanName: !Sub ${SystemName}-${Env}-back-usageplan
           CreateUsagePlan: PER_API
       Tags:
         Worker: !Ref Worker
@@ -88,7 +85,7 @@ Resources:
   ApiFunction: 
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub ${SystemName}-${Env}-
+      FunctionName: !Sub ${SystemName}-${Env}-back
       Events:
         ApiEvent:
           Type: Api
@@ -120,7 +117,7 @@ Resources:
   LambdaLayer:
     Type: AWS::Serverless::LayerVersion
     Properties:
-      LayerName: !Sub ${SystemName}-${Env}--layer
+      LayerName: !Sub ${SystemName}-${Env}-back-layer
       ContentUri: ./dist/layer
       CompatibleRuntimes:
         - !Ref Runtime  
@@ -136,7 +133,7 @@ Resources:
   LambdaPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties: 
-      ManagedPolicyName: !Sub ${SystemName}-${Env}--policy
+      ManagedPolicyName: !Sub ${SystemName}-${Env}-back-policy
       Path: /
       PolicyDocument: 
         Version: 2012-10-17
@@ -174,4 +171,4 @@ Resources:
               - "sts:AssumeRole"    
       ManagedPolicyArns:
         - !Ref LambdaPolicy
-      RoleName: !Sub ${SystemName}-${Env}--role
+      RoleName: !Sub ${SystemName}-${Env}-back-role
