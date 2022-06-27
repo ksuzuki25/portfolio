@@ -1,0 +1,8 @@
+# ide
+.vscode
+
+# terraform関連
+terraform/.terraform/*
+terraform/*.tfstate
+terraform/*.tfstate.backup
+terraform/*.lock.hcl

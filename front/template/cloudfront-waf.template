@@ -1,0 +1,72 @@
+#*******************************************************************************
+# Template for waf with CloudFront
+#*******************************************************************************
+AWSTemplateFormatVersion: 2010-09-09
+Description: S3 and CloudFront for Static website hosting (OAI Available)
+Parameters:
+  SystemName:
+    Description: 'Please enter a name to identify the specified System.'
+    Type: String
+  Worker:
+    Description: "Please enter the worker's Name as a format of FirstName LastName."
+    Type: String
+  Date:
+    Description: 'Please enter the Date of the deployment as a format of yyyy/mm/dd.'
+    Type: String
+    AllowedPattern: "^\\d{4}(/\\d{2}){2}$"
+  # 関連付けるCloudFrontのDistributionのARN
+  TargetDistributionARN:
+    Description: 'Please enter the Associate CloudFront Distribution arn'
+    Type: String
+  BillingGroup:
+    Description: Cost tag.
+    Type: String
+Resources:
+  #-----------------------------------------------------------------------------
+  # WAF
+  #-----------------------------------------------------------------------------
+  WebAcl:
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      Name: !Sub '${SystemName}-Web-ACL'
+      Scope: CLOUDFRONT
+      DefaultAction:
+        Allow: {}
+      VisibilityConfig:
+        CloudWatchMetricsEnabled: true
+        SampledRequestsEnabled: false
+        MetricName: !Sub '${SystemName}-Web-ACL'
+      Rules:
+        - Name: AWS-AWSManagedRulesCommonRuleSet
+          Priority: 1
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesCommonRuleSet
+          OverrideAction:
+            None: {}
+          VisibilityConfig:
+            CloudWatchMetricsEnabled: true
+            SampledRequestsEnabled: false
+            MetricName: AWSManagedRulesCommonRuleSet
+        - Name: AWS-AWSManagedRulesKnownBadInputsRuleSet
+          Priority: 2
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesKnownBadInputsRuleSet
+          OverrideAction:
+            None: {}
+          VisibilityConfig:
+            CloudWatchMetricsEnabled: true
+            SampledRequestsEnabled: false
+            MetricName: AWSManagedRulesKnownBadInputsRuleSet
+      Tags:
+        - Key: Name
+          Value: !Sub '${SystemName}-Web-ACL'
+        - Key: Worker
+          Value: !Ref Worker
+        - Key: Date
+          Value: !Ref Date
+        - Key: BillingGroup
+          Value: !Ref BillingGroup

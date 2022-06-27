@@ -1,0 +1,23 @@
+---
+# 参考 https://zenn.dev/januswel/articles/402774d76424e71ac906
+# 参考 https://dev.classmethod.jp/articles/eslint-configurations-2020/
+root: true
+env:
+  es2020: true
+  jest/globals: true
+  node: true
+parser: "@typescript-eslint/parser"
+parserOptions:
+  project: ./tsconfig.json
+plugins:
+  - "@typescript-eslint"
+  - jest
+extends:
+  - next/core-web-vitals
+  - eslint:recommended
+  - plugin:@typescript-eslint/eslint-recommended
+  - plugin:@typescript-eslint/recommended
+  - plugin:jest/recommended
+  - prettier
+rules:
+  "@next/next/no-img-element": "off"

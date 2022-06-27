@@ -1,0 +1,108 @@
+version: "3.9"
+services:
+  back_host:
+    image: sam-host:latest
+    container_name: back_host
+    hostname: back_host
+    command: >
+      /bin/bash -c "\
+        cd app && yarn install && yarn build:deploy && \cp -f .env ../dist/function && cd - && \
+        sam build --parallel --cached && \
+        sam local start-api \
+          --host=0.0.0.0 \
+          --port=${BACK_PORT} \
+          --docker-network=nw_development \
+           2>&1 | tr '\r' '\n'"
+    working_dir: ${WORKSPACE_PATH}/back
+    privileged: true
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+      - type: bind
+        source: ${WORKSPACE_PATH}/back
+        target: ${WORKSPACE_PATH}/back
+    network_mode: host
+    depends_on:
+      - db
+  front_host:
+    image: sam-api:latest
+    container_name: front_host
+    hostname: front_host
+    command: >
+      /bin/bash -c "\
+       yarn install && yarn dev -p ${FRONT_PORT}"
+    working_dir: ${WORKSPACE_PATH}/front
+    privileged: true
+    volumes:
+      - type: bind
+        source: ${WORKSPACE_PATH}/front
+        target: ${WORKSPACE_PATH}/front
+    network_mode: host
+  dev:
+    image: sam-api:latest
+    container_name: dev
+    hostname: dev
+    command: /sbin/init 3
+    working_dir: /root/workspace
+    user: root
+    privileged: true
+    volumes:
+      - ${WORKSPACE_PATH}/front:/root/workspace/front
+      - ${WORKSPACE_PATH}/back:/root/workspace/back
+    networks:
+      - nw_development
+  db:
+    image: amazon/dynamodb-local:latest
+    container_name: db
+    hostname: db
+    command: -jar DynamoDBLocal.jar -sharedDb -dbPath ./data
+    user: root
+    working_dir: /home/dynamodblocal
+    volumes:
+      - ${DOCKER_WORK_PATH}/development/db:/home/dynamodblocal/data
+    ports:
+      - ${DYNAMO_DB_PORT}:8000
+    networks:
+      - nw_development
+  db_admin:
+    container_name: db_admin
+    image: aaronshaf/dynamodb-admin:latest
+    environment:
+      - DYNAMO_ENDPOINT=db:8000
+    ports:
+      - ${DYNAMO_DB_ADMIN_PORT}:8001
+    depends_on:
+      - db
+    networks:
+      - nw_development
+  develop_terraform_dynamodb_db:
+    container_name: develop_terraform_dynamodb_db
+    image: hashicorp/terraform:1.0.5
+    command: >
+      /bin/sh -c
+      '
+      mkdir -p $HOME/.terraform.d/plugin-cache &&
+      echo "plugin_cache_dir = \"$HOME/.terraform.d/plugin-cache\"" > ~/.terraformrc &&
+      terraform init &&
+      terraform apply -auto-approve;
+      /bin/sh
+      '
+    entrypoint: ""
+    tty: true
+    environment:
+      - AWS_ACCESS_KEY_ID=dummy
+      - AWS_SECRET_ACCESS_KEY=dummy
+    working_dir: /terraform
+    volumes:
+      - ./terraform:/terraform
+    depends_on:
+      - db
+    networks:
+      - nw_development
+    profiles:
+      - extra
+networks:
+  nw_development:
+    driver: bridge
+    name: nw_development

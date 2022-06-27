@@ -1,0 +1,61 @@
+{
+  "master_01": {
+    "HashId": {
+      "S": "testUser"
+    },
+    "RangeId": {
+      "S": "ae2c3a42ba1f4a739629beea1eb07131"
+    }
+  },
+  "master_02": {
+    "HashId": {
+      "S": "ae2c3a42ba1f4a739629beea1eb07131"
+    },
+    "RangeId": {
+      "S": "ae2c3a42ba1f4a739629beea1eb07131"
+    },
+    "TodoList": {
+      "L": [
+        {
+          "M": {
+            "id": {
+              "N": "1"
+            },
+            "text": {
+              "S": "テスト"
+            },
+            "isDone": {
+              "BOOL": false
+            }
+          }
+        },
+        {
+          "M": {
+            "id": {
+              "N": "2"
+            },
+            "text": {
+              "S": "done"
+            },
+            "isDone": {
+              "BOOL": true
+            }
+          }
+        },
+        {
+          "M": {
+            "id": {
+              "N": "3"
+            },
+            "text": {
+              "S": "サンプル"
+            },
+            "isDone": {
+              "BOOL": false
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,7 @@
+semi: false # 行末のセミコロンは省略する
+singleQuote: true # 引用符にはシングルクォートを使う
+printWidth: 120 
+tabWidth: 2
+traillingComma: "all"
+arrowParens: "always"
+endOfLine: lf

@@ -1,0 +1,15 @@
+{
+  "extends": "./app/tsconfig.json",
+  "compilerOptions": {
+    "typeRoots": ["./app/node_modules/@types", "./app/src/types/@types"],
+    "types": [],
+    "outDir": "./dist/function",
+    "baseUrl": "./app",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "sourceMap": false
+  },
+  "include": ["./app/src/**/*"],
+  "exclude": ["./app/src/tests"]
+}

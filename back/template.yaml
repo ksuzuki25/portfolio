@@ -1,0 +1,177 @@
+#*******************************************************************************
+# SAM Template
+# TODO:　WIP
+#*******************************************************************************
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: AWS SAM template for Serverless Base Applications
+
+Parameters:
+  Env:
+    Description: Please select environment name
+    Type: String
+    Default: test
+    AllowedValues:
+      - test
+      - dev
+      - prod
+  SystemName:
+    Description: Please enter a name to identify the specified System.
+    Type: String
+    Default: kobuhei-develop
+  Worker:
+    Description: Please enter the worker's Name as a format of FirstName LastName.
+    Type: String
+  Date:
+    Description: Please enter the Date of the deployment as a format of yyyy/mm/dd.
+    Type: String
+    AllowedPattern : "^\\d{4}(/\\d{2}){2}$"
+  BillingGroup:
+    Description: Cost Tag.
+    Type: String
+  Runtime:
+    Description: Please enter Lambda Runtime.
+    Type: String
+    Default: nodejs16.x
+  CodeUri:
+    Description: Please enter the Path of Lambda Function.
+    Type: String
+    Default: ./dist/function/
+
+
+Metadata: 
+  AWS::CloudFormation::Interface: 
+    ParameterGroups:
+      - 
+        Label: 
+          default: Environment Setting
+        Parameters: 
+          - SystemName
+          - Env
+      - 
+        Label: 
+          default: Variables
+        Parameters: 
+          - CodeUri
+          - Runtime
+      - 
+        Label: 
+          default: Tags
+        Parameters: 
+          - Worker
+          - Date
+          - BillingGroup
+
+Globals:
+  Api:
+    OpenApiVersion: 3.0.2
+
+Resources:
+  ApiGatewayApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub ${SystemName}-${Env}-back-apigw
+      StageName: test
+      AccessLogSetting:
+        DestinationArn: !GetAtt LogGroup.Arn
+        Format: '{ "requestId":"$context.requestId", "ip": "$context.identity.sourceIp", "caller":"$context.identity.caller", "user":"$context.identity.user","requestTime":"$context.requestTime", "httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath", "status":"$context.status","protocol":"$context.protocol", "responseLength":"$context.responseLength" }'
+      Auth:
+        ApiKeyRequired: true
+        UsagePlan: 
+          UsagePlanName: !Sub ${SystemName}-${Env}-usageplan
+          CreateUsagePlan: PER_API
+      Tags:
+        Worker: !Ref Worker
+        Date: !Ref Date
+        BillingGroup: !Ref BillingGroup
+
+  ApiFunction: 
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${SystemName}-${Env}-
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /api/{proxy+}
+            Method: any
+            RestApiId:
+              Ref: ApiGatewayApi
+            Auth:
+              ApiKeyRequired: true
+      MemorySize: 512
+      Handler: index.handler
+      Runtime: !Ref Runtime
+      Timeout: 30
+      AutoPublishAlias: !Ref Env
+      Role: !GetAtt LambdaExecutionRole.Arn
+      CodeUri: !Ref CodeUri
+      Handler: app.lambdaHandler
+      Layers:
+        - !Ref LambdaLayer
+      Tags:
+        Worker: !Ref Worker
+        Date: !Ref Date
+        BillingGroup: !Ref BillingGroup
+
+# -----------------------------------#
+# LambdaLayer
+# -----------------------------------#
+  LambdaLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub ${SystemName}-${Env}--layer
+      ContentUri: ./dist/layer
+      CompatibleRuntimes:
+        - !Ref Runtime  
+      CompatibleArchitectures:
+        - x86_64
+    Metadata:
+      BuildMethod: !Ref Runtime
+
+# -----------------------------------#
+# IAM
+# -----------------------------------#
+
+  LambdaPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties: 
+      ManagedPolicyName: !Sub ${SystemName}-${Env}--policy
+      Path: /
+      PolicyDocument: 
+        Version: 2012-10-17
+        Statement:
+          - Sid: ReadWriteTable
+            Effect: Allow
+            Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:GetItem
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:BatchWriteItem
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
+            Resource: 
+              - !Sub 'arn:aws:dynamodb:*:*:table/${SystemName}-${Env}-todo-list'
+          - Sid: GetStreamRecords
+            Effect: Allow
+            Action: dynamodb:GetRecords
+            Resource: 
+              - !Sub 'arn:aws:dynamodb:*:*:table/${SystemName}-${Env}-todo-list/stream/* '
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties: 
+      AssumeRolePolicyDocument: 
+        Version: 2012-10-17
+        Statement:
+          - 
+            Effect: "Allow"
+            Principal:      
+              Service: 
+                - "lambda.amazonaws.com"
+            Action:         
+              - "sts:AssumeRole"    
+      ManagedPolicyArns:
+        - !Ref LambdaPolicy
+      RoleName: !Sub ${SystemName}-${Env}--role
