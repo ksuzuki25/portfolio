@@ -1,5 +1,5 @@
 #*******************************************************************************
-# Template for waf with CloudFront
+# Template for waf with CloudFront(deploy us-east-1)
 #*******************************************************************************
 AWSTemplateFormatVersion: 2010-09-09
 Description: S3 and CloudFront for Static website hosting (OAI Available)
@@ -14,10 +14,6 @@ Parameters:
     Description: 'Please enter the Date of the deployment as a format of yyyy/mm/dd.'
     Type: String
     AllowedPattern: "^\\d{4}(/\\d{2}){2}$"
-  # 関連付けるCloudFrontのDistributionのARN
-  TargetDistributionARN:
-    Description: 'Please enter the Associate CloudFront Distribution arn'
-    Type: String
   BillingGroup:
     Description: Cost tag.
     Type: String

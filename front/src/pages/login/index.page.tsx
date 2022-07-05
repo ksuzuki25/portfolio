@@ -4,7 +4,7 @@ import { authenticatorStyle } from './styles.css'
 
 const Login: NextPageWithLayout = () => {
   // ログインUIを別途出すだけのページ
-  return <Authenticator className={authenticatorStyle}></Authenticator>
+  return <Authenticator className={authenticatorStyle} signUpAttributes={['email']}></Authenticator>
 }
 
 export default Login

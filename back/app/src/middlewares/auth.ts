@@ -28,13 +28,13 @@ export const auth = async (req: Request, res: Response, next: NextFunction) => {
       const requestUserId = req.query.userId ? req.query.userId : req.body.userId
 
       // cognito:usernameが存在しないもしくはリクエストのuserIdに一致しない場合エラー
-      if (!userId && userId !== requestUserId) {
+      if (!userId || userId !== requestUserId) {
         throw new Error()
       }
-      
+
       // チェックに問題がなければ次へ
       next()
-      
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       res.status(403).json()
