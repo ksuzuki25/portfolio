@@ -22,7 +22,6 @@
   - オーケストレーションツールに docker-compose を使用
   - Cognito は AWS 上にユーザープール作成必須
 
-## TODO事項
+## TODO 事項
 
 - テストコードの実装
-- CloudFormationテンプレートの調整

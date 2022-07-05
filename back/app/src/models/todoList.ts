@@ -40,12 +40,12 @@ const todoListSchema = new dynamoose.Schema(
 // テーブル名の制御
 const tableName =
   isLocal || isLocalTest || isAWSTest
-    ? 'kobuhei-development-test-todo-list'
+    ? 'portfolio-test-todo-list'
     : isDev
-    ? 'kobuhei-development-dev-todo-list'
+    ? 'portfolio-dev-todo-list'
     : isProd
-    ? 'kobuhei-development-prod-todo-list'
-    : 'kobuhei-development-test-todo-list'
+    ? 'portfolio-prod-todo-list'
+    : 'portfolio-test-todo-list'
 const modelConfig = {
   create: false,
   waitForActive: false,

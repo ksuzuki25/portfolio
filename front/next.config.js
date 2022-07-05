@@ -6,7 +6,7 @@ const withVanillaExtract = createVanillaExtractPlugin()
 const nextConfig = {
   reactStrictMode: true,
   pageExtensions: ['page.tsx'],
-  trailingSlash: false,
+  trailingSlash: true,
   // 本PJはgenerateでの利用を想定
   // そのため、rewritesは実質的にローカル環境でのみ有効
   async rewrites() {

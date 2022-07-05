@@ -1,6 +1,5 @@
 #*******************************************************************************
-# SAM Template
-# TODO:　WIP
+# SAM Template　for todo app
 #*******************************************************************************
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
@@ -37,7 +36,9 @@ Parameters:
     Description: Please enter the Path of Lambda Function.
     Type: String
     Default: ./dist/function/
-
+  NodeEnv:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: 'node-env'
 
 Metadata: 
   AWS::CloudFormation::Interface: 
@@ -54,6 +55,7 @@ Metadata:
         Parameters: 
           - CodeUri
           - Runtime
+          - NodeEnv
       - 
         Label: 
           default: Tags
@@ -71,12 +73,16 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       Name: !Sub ${SystemName}-${Env}-back-apigw
-      StageName: test
+      StageName: !Ref Env
       Auth:
         ApiKeyRequired: true
         UsagePlan: 
           UsagePlanName: !Sub ${SystemName}-${Env}-back-usageplan
           CreateUsagePlan: PER_API
+        DefaultAuthorizer: CognitoAuthorizer
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !GetAtt UserPool.Arn
       Tags:
         Worker: !Ref Worker
         Date: !Ref Date
@@ -104,6 +110,11 @@ Resources:
       Role: !GetAtt LambdaExecutionRole.Arn
       CodeUri: !Ref CodeUri
       Handler: app.lambdaHandler
+      Environment:
+        Variables:
+          NODE_ENV: !Ref NodeEnv
+          COGNITO_USER_POOL_ID: !Ref UserPool
+          COGNITO_APP_CLIENT_ID: !Ref UserPoolAppClient
       Layers:
         - !Ref LambdaLayer
       Tags:
@@ -129,7 +140,6 @@ Resources:
 # -----------------------------------#
 # IAM
 # -----------------------------------#
-
   LambdaPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties: 
@@ -172,3 +182,113 @@ Resources:
       ManagedPolicyArns:
         - !Ref LambdaPolicy
       RoleName: !Sub ${SystemName}-${Env}-back-role
+
+# -----------------------------------#
+# DynamoDB
+# -----------------------------------#
+  DynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${SystemName}-${Env}-todo-list'
+      AttributeDefinitions: 
+        - AttributeName: HashId
+          AttributeType: S
+        - AttributeName: RangeId
+          AttributeType: S
+      KeySchema: 
+        - AttributeName: HashId
+          KeyType: HASH
+        - AttributeName: RangeId
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+      Tags:
+        - Key: Worker
+          Value: !Ref Worker
+        - Key: Date
+          Value: !Ref Date
+        - Key: BillingGroup
+          Value: !Ref BillingGroup
+
+# -----------------------------------#
+# Cognito
+# -----------------------------------#
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub ${SystemName}-${Env}-userpool
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: true
+          RequireUppercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+          TemporaryPasswordValidityDays: 7
+      Schema:
+        - Name: 'email'
+          StringAttributeConstraints:
+            MinLength: '0'
+            MaxLength: '2048'
+          Required: true
+          AttributeDataType: 'String'
+          Mutable: true
+      AutoVerifiedAttributes:
+        - email
+      EmailConfiguration:
+        EmailSendingAccount: COGNITO_DEFAULT
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: false
+      MfaConfiguration: 'OFF'
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Priority: 1
+            Name: verified_email
+      UsernameConfiguration:
+        CaseSensitive: false
+      VerificationMessageTemplate:
+        DefaultEmailOption: CONFIRM_WITH_CODE
+      UserPoolTags:
+        Worker: !Ref Worker
+        Date: !Ref Date
+        BillingGroup: !Ref BillingGroup
+
+  UserPoolAppClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName:  !Sub ${SystemName}-${Env}-userpool-client
+      UserPoolId: !Ref UserPool
+      ExplicitAuthFlows:
+        - ALLOW_ADMIN_USER_PASSWORD_AUTH
+        - ALLOW_CUSTOM_AUTH
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      EnableTokenRevocation: true
+      PreventUserExistenceErrors: ENABLED
+      SupportedIdentityProviders:
+        - COGNITO
+      AllowedOAuthFlows:
+        - code
+      AllowedOAuthScopes:
+        - email
+        - openid
+      AllowedOAuthFlowsUserPoolClient: true
+      ReadAttributes:
+        - email
+        - email_verified
+      WriteAttributes:
+        - email
+      CallbackURLs:
+        - "https://portfolio.kobuhei-develop.com/list"
+      LogoutURLs:
+        - "https://portfolio.kobuhei-develop.com/login"
+
+# -----------------------------------#
+# Outputs
+# -----------------------------------#
+Outputs:
+  UserPoolId:
+    Description: Cognito UserPool ID
+    Value: !Ref UserPool
+  UserPoolAppClientId:
+    Description: Cognito App Client ID
+    Value: !Ref UserPoolAppClient
